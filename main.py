@@ -2,6 +2,7 @@ import telebot
 import buttons
 import database
 from telebot import types
+from database import get_exact_user_cart, get_user_number_name
 
 bot = telebot.TeleBot('6733360508:AAGzdnGvr8nUJoC8T6TkJ2dan9idjzd8nEs')
 
@@ -11,7 +12,7 @@ def is_admin(user_id):
 
 users = {}
 
-database.add_product('Kavrak', 250.000, 1000, 'oрганизмга комплекс тарзда таъсир қилувчи воситадир.', '')
+database.add_product('Kavrak', 250.000, 1000, 'oрганизмга комплекс тарзда таъсир қилувчи воситадир.', 'media/kavrak.jpg')
 @bot.message_handler(commands=['start'])
 def start_message(message):
     user_id = message.from_user.id
@@ -26,10 +27,24 @@ def start_message(message):
         bot.register_next_step_handler(message, get_name)
 
 def get_name(message):
-    user_id = message.from_user.id
-    username = message.text
-    bot.send_message(user_id, 'Отправьте свою локацию', reply_markup=buttons.geo_buttons())
-    bot.register_next_step_handler(message, handle_location, username)
+    if message.text == message.text:
+        user_id = message.from_user.id
+        username = message.text
+        bot.send_message(user_id, 'Отправьте свою локацию', reply_markup=buttons.geo_buttons())
+        bot.register_next_step_handler(message, handle_location, username)
+    elif message.text == "Заказать товар🛍":
+        user_id = message.from_user.id
+        bot.send_message(user_id, 'Вы не зарегистрированы, отправьте свое имя')
+        bot.register_next_step_handler(message, get_name)
+    elif message.text == "Поддержка❓":
+        user_id = message.from_user.id
+        bot.send_message(user_id, 'Вы не зарегистрированы, отправьте свое имя')
+        bot.register_next_step_handler(message, get_name)
+    elif message.text == "Корзина🛒":
+        user_id = message.from_user.id
+        bot.send_message(user_id, 'Вы не зарегистрированы, отправьте свое имя')
+        bot.register_next_step_handler(message, get_name)
+
 
 # Обработчик локации при регистрации
 def handle_location(message, username):
@@ -73,14 +88,57 @@ def get_number(message, name):
 # Заказать товар
 @bot.message_handler(func=lambda message: message.text == "Заказать товар🛍")
 def show_pr(message):
-    user_id = message.chat.id
-    products = database.get_pr_name_id()
-    bot.send_message(user_id, 'Выберите товар', reply_markup=buttons.products(products))
+    user_id = message.from_user.id
+    checker = database.check_user(user_id)
+
+    if checker:
+        products = database.get_pr_name_id()
+        bot.send_message(user_id, 'Выберите товар', reply_markup=buttons.products(products))
+    elif not checker:
+        bot.send_message(user_id, 'Вы не зарегистрированы, отправьте свое имя')
+        bot.register_next_step_handler(message, get_name)
+
 
 # Функция для обработки кнопки Поддержка❓
 @bot.message_handler(func=lambda message: message.text == "Поддержка❓")
 def show_support(message):
-    bot.send_message(message.chat.id, f"Поддержка: @Elyorbek_2708")
+    user_id = message.from_user.id
+    checker = database.check_user(user_id)
+
+    if checker:
+        bot.send_message(message.chat.id, f"Поддержка: @Elyorbek_2708")
+    elif not checker:
+        bot.send_message(user_id, 'Вы не зарегистрированы, отправьте свое имя')
+        bot.register_next_step_handler(message, get_name)
+
+
+
+# Обработчик команды "Корзина"
+@bot.message_handler(func=lambda message: message.text == "Корзина🛒", content_types=['text'])
+def handle_cart(message):
+    user_id = message.from_user.id
+    checker = database.check_user(user_id)
+
+    if checker:
+        user_cart = get_exact_user_cart(user_id)
+        if user_cart:
+            cart_text = "Ваша корзина:\n"
+            for item in user_cart:
+                cart_text += f"{item[0]} - {item[1]} шт. - {item[2]} сум.\n"
+
+            user_info = get_user_number_name(user_id)
+            user_name = user_info[0] if user_info else "Уважаемый клиент"
+            cart_text += f"\nИтого к оплате: {sum([item[2] for item in user_cart])} сум.\n"
+            cart_text += f"\n{user_name}, Оформите заказ, чтобы продолжить."
+
+            bot.send_message(user_id, cart_text)
+    elif not checker:
+        bot.send_message(user_id, 'Вы не зарегистрированы, отправьте свое имя')
+        bot.register_next_step_handler(message, get_name)
+    else:
+        bot.send_message(user_id, "Ваша корзина пуста. Закажите товар, чтобы добавить его в корзину.")
+
+
 
 
 # Обработчик выбора количества
@@ -217,11 +275,11 @@ def handle_order_actions(call):
 
     if call.data == 'accept_order':
         # Отправить пользователю сообщение о том, что заказ принят
-        bot.send_message(user_id, 'заказ принят. позвоните оператору.')
+        bot.send_message(user_id, 'Заказ принят. Оператор свяжется с вами в ближайшее.')
 
 
     elif call.data == 'cancel_order':
-        bot.send_message(user_id, 'Отменил заказ : Товар закончился')
+        bot.send_message(user_id, 'Заказ отменен : Товар закончился')
 
 
 
@@ -270,14 +328,22 @@ def get_user_product(call):
     # Сохраним айди пользователя
     user_id = call.message.chat.id
 
-
     # Сохраним продукт во временный словарь
     # call.data - значение нажатой кнопки(инлайн)
-    users[user_id] = {'pr_name': call.data, 'pr_count': 1, 'pr_photo': call.data}
-    print(users)
+    users[user_id] = {'pr_name': call.data, 'pr_count': 1}
 
-    photo = open("path/to/your/photo.jpg", 'rb')
-    bot.send_photo(user_id, photo, caption='Вот товар, Выберите кол-во', reply_markup=buttons.choose_product_count())
+    # Получаем информацию о продукте по его id
+    product_info = database.get_product_by_id(call.data)
+    product_name = product_info[1]
+    product_description = product_info[4]
+    product_price = product_info[2]
+
+    # Отправляем фото и информацию о продукте
+    photo_path = product_info[5]
+    photo = open(photo_path, 'rb')
+    bot.send_photo(user_id, photo, caption=f'{product_name}\n{product_description}\nЦена: {product_price}Cум.',
+                   reply_markup=buttons.choose_product_count())
+
 
 # Обработчик команды /delete_product
 @bot.message_handler(commands=['delete_product'])

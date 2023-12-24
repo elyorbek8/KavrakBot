@@ -7,6 +7,7 @@ def main_menu_buttons():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(types.KeyboardButton("Заказать товар🛍"))
     markup.add(types.KeyboardButton("Поддержка❓"))
+    markup.add(types.KeyboardButton("Корзина🛒"))
     return markup
 
 def main_menu(get_pr_name_id):
@@ -47,18 +48,13 @@ def choose_product_count(plus_or_minus='', current_amount=1):
     #Отслеживать плюс или минус
     if plus_or_minus == 'plus':
         new_amount = int(current_amount) + 1
-        print(f' plus{new_amount}')
-
         count = InlineKeyboardButton(text=str(new_amount), callback_data=str(new_amount))
-        print(f" vixod {count}")
 
     elif plus_or_minus == 'minus':
         if int(current_amount) > 1:
             new_amount = int(current_amount) - 1
-            print(f' minus{new_amount}')
-
             count = InlineKeyboardButton(text=str(new_amount), callback_data=str(new_amount))
-            print(f" vixod {count}")
+
 
     # Обединить кнопки с пространством
     buttons.add(minus, count, plus)

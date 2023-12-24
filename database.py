@@ -3,23 +3,19 @@ import sqlite3
 from datetime import datetime
 
 db = sqlite3.connect('dostavka.db')
-
 kavrak = db.cursor()
 
 # Создание таблицы пользователя
-kavrak.execute('CREATE TABLE IF NOT EXISTS users'
-                  '(tg_id INTEGER, name TEXT, phone_number TEXT, address TEXT,'
-                  'reg_date DATETIME);')
+kavrak.execute('CREATE TABLE IF NOT EXISTS users (tg_id INTEGER, name TEXT, phone_number TEXT, address TEXT, '
+               'reg_date DATETIME);')
 
 # Создание таблицы продуктов
-kavrak.execute('CREATE TABLE IF NOT EXISTS products'
-                  '(pr_id INTEGER PRIMARY KEY AUTOINCREMENT, pr_name TEXT, pr_price REAL, pr_quantity INTEGER,'
-                  'pr_des TEXT, pr_photo TEXT, reg_date DATETIME);')
+kavrak.execute('CREATE TABLE IF NOT EXISTS products (pr_id INTEGER PRIMARY KEY AUTOINCREMENT,'
+               ' pr_name TEXT, pr_price REAL, pr_quantity INTEGER, pr_des TEXT, pr_photo TEXT, reg_date DATETIME);')
 
 # Создание таблицы для корзины пользователя
-kavrak.execute('CREATE TABLE IF NOT EXISTS user_cart'
-                  '(user_id INTEGER, user_product TEXT, quantity INTEGER,'
-                  'total_for_price REAL);')
+kavrak.execute('CREATE TABLE IF NOT EXISTS user_cart (user_id INTEGER, user_product TEXT, quantity INTEGER,'
+               'total_for_price REAL);')
 
 
 # Регистрация пользователя
@@ -27,14 +23,14 @@ def register_user(tg_id, name, phone_number, address):
     with sqlite3.connect('dostavka.db') as db:
         kavrak = db.cursor()
 
-    # Добавляем пользователя в базу данных
+# Добавляем пользователя в базу данных
     kavrak.execute('INSERT INTO users (tg_id, name, phone_number, address, reg_date) VALUES '
-                      '(?, ?, ?, ?, ?);', (tg_id, name, phone_number, address, datetime.now()))
+                   '(?, ?, ?, ?, ?);', (tg_id, name, phone_number, address, datetime.now()))
 
     db.commit()
 
 
-# Проверяем пользователя есть ли такой id в нашем базе данных
+# Проверяем пользователя есть ли такой id в нашей базе данных
 def check_user(user_id):
     with sqlite3.connect('dostavka.db') as db:
         kavrak = db.cursor()
@@ -52,9 +48,8 @@ def add_product(pr_name, pr_price, pr_quantity, pr_des, pr_photo):
     with sqlite3.connect('dostavka.db') as db:
         kavrak = db.cursor()
 
-    kavrak.execute('INSERT INTO products'
-                      '(pr_name, pr_price, pr_quantity, pr_des, pr_photo, reg_date) VALUES'
-                      '(?, ?, ?, ?, ?, ?);', (pr_name, pr_price, pr_quantity, pr_des, pr_photo, datetime.now()))
+    kavrak.execute('INSERT INTO products (pr_name, pr_price, pr_quantity, pr_des, pr_photo, reg_date) VALUES '
+                   '(?, ?, ?, ?, ?, ?);', (pr_name, pr_price, pr_quantity, pr_des, pr_photo, datetime.now()))
 
     db.commit()
 
@@ -99,9 +94,8 @@ def add_product_to_cart(user_id, user_product, quantity):
     product_price = get_product_id(user_product)
     print(product_price)
 
-    kavrak.execute('INSERT INTO user_cart '
-                      '(user_id, user_product, quantity, total_for_price)'
-                      'VALUES (?, ?, ?, ?);', (user_id, user_product, quantity, quantity * product_price))
+    kavrak.execute('INSERT INTO user_cart(user_id, user_product, quantity, total_for_price)'
+                   'VALUES (?, ?, ?, ?);', (user_id, user_product, quantity, quantity * product_price))
 
     db.commit()
 
@@ -122,7 +116,9 @@ def get_exact_user_cart(user_id):
 
     sql = connection.cursor()
 
-    user_cart = sql.execute('SELECT products.pr_name, user_cart.quantity, user_cart.total_for_price FROM products INNER JOIN user_cart ON products.pr_id=user_cart.user_product WHERE user_cart.user_id=?;',
+    user_cart = sql.execute('SELECT products.pr_name, user_cart.quantity, user_cart.total_for_price '
+                            'FROM products INNER JOIN user_cart ON products.pr_id=user_cart.user_product '
+                            'WHERE user_cart.user_id=?;',
                             (user_id,)).fetchall()
     print(user_cart)
 
@@ -186,3 +182,12 @@ def get_user_location(user_id):
     location = kavrak.execute('SELECT address FROM users WHERE tg_id=?;', (user_id,)).fetchone()
 
     return location[0] if location else None
+
+
+def get_product_by_id(pr_id):
+    with sqlite3.connect('dostavka.db') as db:
+        kavrak = db.cursor()
+
+    product_info = kavrak.execute('SELECT * FROM products WHERE pr_id=?;', (pr_id,)).fetchone()
+    db.close()
+    return product_info
