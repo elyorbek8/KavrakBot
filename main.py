@@ -9,13 +9,13 @@ GOOGLE_MAPS_API_KEY = 'AIzaSyD7WKNnIQITdsoZNp28W5mDXkOCXslnmNo'
 
 bot = telebot.TeleBot('6733360508:AAGzdnGvr8nUJoC8T6TkJ2dan9idjzd8nEs')
 
-admins = [5884034743]
-def is_admin(user_id):
-    return user_id in admins
 
 users = {}
 
-database.add_product('Kavrak', 250.000, 1000, 'oрганизмга комплекс тарзда таъсир қилувчи воситадир.', 'media/kavrak.jpg')
+
+
+#database.delete_product('SANTA')
+database.add_product('SANTA', 250.000, 1000, 'САНТА САНТА ТЕБЯ ПОЗДРАВИТ САНТА', 'media/SANTA.jpg')
 @bot.message_handler(commands=['start'])
 def start_message(message):
     user_id = message.from_user.id
@@ -30,23 +30,10 @@ def start_message(message):
         bot.register_next_step_handler(message, get_name)
 
 def get_name(message):
-    if message.text == message.text:
-        user_id = message.from_user.id
-        username = message.text
-        bot.send_message(user_id, 'Отправьте свою локацию', reply_markup=buttons.geo_buttons())
-        bot.register_next_step_handler(message, handle_location, username)
-    elif message.text == "Заказать товар🛍":
-        user_id = message.from_user.id
-        bot.send_message(user_id, 'Вы не зарегистрированы, отправьте свое имя')
-        bot.register_next_step_handler(message, get_name)
-    elif message.text == "Поддержка❓":
-        user_id = message.from_user.id
-        bot.send_message(user_id, 'Вы не зарегистрированы, отправьте свое имя')
-        bot.register_next_step_handler(message, get_name)
-    elif message.text == "Корзина🛒":
-        user_id = message.from_user.id
-        bot.send_message(user_id, 'Вы не зарегистрированы, отправьте свое имя')
-        bot.register_next_step_handler(message, get_name)
+    user_id = message.from_user.id
+    username = message.text
+    bot.send_message(user_id, 'Отправьте свою локацию', reply_markup=buttons.geo_buttons())
+    bot.register_next_step_handler(message, handle_location, username)
 
 
 # Обработчик локации при регистрации
@@ -62,8 +49,7 @@ def handle_location(message, username):
         # Добавление адреса пользователя в базу данных
         database.update_user_address(user_id, place_name)
 
-        bot.send_message(user_id, f'Ваша локация: {place_name}')
-        bot.send_message(user_id, 'Отправьте свой номер телефона', reply_markup=buttons.number_buttons())
+        bot.send_message(user_id, f'Ваша локация: {place_name} \nОтправьте свой номер телефона', reply_markup=buttons.number_buttons())
         bot.register_next_step_handler(message, get_number, username)
     else:
         bot.send_message(user_id, 'Отправьте вашу локацию', reply_markup=buttons.geo_buttons())
@@ -133,7 +119,8 @@ def show_support(message):
 
 
 # Обработчик команды "Корзина"
-@bot.message_handler(func=lambda message: message.text == "Корзина🛒", content_types=['text'])
+# Обработчик команды "Корзина"
+@bot.message_handler(func=lambda message: message.text == "Корзина🛒")
 def handle_cart(message):
     user_id = message.from_user.id
     checker = database.check_user(user_id)
@@ -150,15 +137,12 @@ def handle_cart(message):
             cart_text += f"\nИтого к оплате: {sum([item[2] for item in user_cart])} сум.\n"
             cart_text += f"\n{user_name}, Оформите заказ, чтобы продолжить."
 
-            bot.send_message(user_id, cart_text)
+            bot.send_message(user_id, cart_text, reply_markup=buttons.get_cart())
+        else:
+            bot.send_message(user_id, "Ваша корзина пуста. Закажите товар, чтобы добавить его в корзину.")
     elif not checker:
         bot.send_message(user_id, 'Вы не зарегистрированы, отправьте свое имя')
         bot.register_next_step_handler(message, get_name)
-    else:
-        bot.send_message(user_id, "Ваша корзина пуста. Закажите товар, чтобы добавить его в корзину.")
-
-
-
 
 # Обработчик выбора количества
 @bot.callback_query_handler(lambda call: call.data in ['plus', 'minus', 'to_cart', 'back'])
@@ -269,7 +253,7 @@ def main_menu_handle(call):
         bot.edit_message_text(full_text,
                               user_id,
                               message_id,
-                              reply_markup=buttons.get_cart(products))
+                              reply_markup=buttons.get_cart())
 
     # Если нажал на очистить корзину
     elif call.data == 'clear_cart':
@@ -294,7 +278,7 @@ def handle_order_actions(call):
 
     if call.data == 'accept_order':
         # Отправить пользователю сообщение о том, что заказ принят
-        bot.send_message(user_id, 'Заказ принят. Оператор свяжется с вами в ближайшее.')
+        bot.send_message(user_id, 'Заказ принят. Оператор свяжется с вами в ближайшее.', reply_markup=types.ReplyKeyboardRemove())
 
 
     elif call.data == 'cancel_order':
@@ -319,10 +303,6 @@ def get_accept(message, full_text):
         GROUP_CHAT_ID = -1002088545962
         # очистить корзину пользователя
         database.delete_product_from_cart(user_id)
-
-        # отправим админу сообщение о новом заказе
-        bot.send_message(GROUP_CHAT_ID, full_text.replace("Ваш", "Новый"))
-
         # Отправить сообщение в группу с информацией о заказе и локацией пользователя
         order_message = f"ОФОРМЛЕН ЗАКАЗ\n{full_text}\nЛокация: {user_location}"
         bot.send_message(GROUP_CHAT_ID, order_message, reply_markup=buttons.accept_or_cancel())
@@ -335,8 +315,7 @@ def get_accept(message, full_text):
         bot.send_message(user_id, 'Заказ отменен', reply_markup=types.ReplyKeyboardRemove())
 
     # Обратно в меню
-    bot.send_message(user_id, 'Меню', reply_markup=buttons.main_menu(products))
-    bot.send_message(user_id, 'Меню', reply_markup=buttons.main_menu_buttons())
+    bot.send_message(user_id, 'Выберите пункт меню', reply_markup=buttons.main_menu_buttons())
 
 
 
@@ -360,33 +339,9 @@ def get_user_product(call):
     # Отправляем фото и информацию о продукте
     photo_path = product_info[5]
     photo = open(photo_path, 'rb')
-    bot.send_photo(user_id, photo, caption=f'{product_name}\n{product_description}\nЦена: {product_price}Cум.',
+    bot.send_photo(user_id, photo, caption=f'{product_name}\n{product_description}\nЦена: {product_price}00Cум.',
                    reply_markup=buttons.choose_product_count())
 
 
-# Обработчик команды /delete_product
-@bot.message_handler(commands=['delete_product'])
-def delete_product_handler(message):
-    user_id = message.from_user.id
-
-    if is_admin(user_id):
-        bot.send_message(user_id, 'Введите название товара для удаления:')
-        bot.register_next_step_handler(message, delete_product_by_name)
-    else:
-        bot.send_message(user_id, 'У вас нет прав для выполнения этой команды.')
-
-# Обработчик удаления товара по названию
-def delete_product_by_name(message):
-    user_id = message.from_user.id
-    product_name = message.text
-
-    # Проверка наличия товара в базе данных
-    if database.get_product_by_name(product_name):
-        # Удаляем товар из базы данных
-        database.delete_product(product_name)
-        bot.send_message(user_id, 'Товар успешно удален!')
-    else:
-        bot.send_message(user_id, 'Товар с таким названием не существует. Пожалуйста, введите корректное название:')
-        bot.register_next_step_handler(message, delete_product_by_name)
 
 bot.infinity_polling()

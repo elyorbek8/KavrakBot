@@ -74,7 +74,7 @@ def get_accept():
     return buttons
 
 # Кнопка для перехода в корзину
-def get_cart(products):
+def get_cart():
     buttons = InlineKeyboardMarkup(row_width=1)
 
     clear_cart = InlineKeyboardButton(text='Очистить корзину', callback_data='clear_cart')

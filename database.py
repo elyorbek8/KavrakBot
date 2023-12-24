@@ -156,7 +156,7 @@ def get_product_by_name(product_name):
     try:
         connection = sqlite3.connect('database.db')
         kavrak = connection.cursor()
-        kavrak.execute("SELECT * FROM products WHERE pr_name = ?", (product_name,))
+        kavrak.execute("SELECT * FROM products WHERE pr_name=?", (product_name,))
         return kavrak.fetchone()
     except Exception as e:
         print(f"Error: {e}")
@@ -168,12 +168,21 @@ def get_product_by_name(product_name):
 
 # Удаление продуктов по имени
 def delete_product(pr_name):
-    with sqlite3.connect('dostavka.db') as db:
-        kavrak = db.cursor()
+    connection = None
+    try:
+        connection = sqlite3.connect('dostavka.db')
+        kavrak = connection.cursor()
 
-    # Удалить продукт по имени
-    kavrak.execute('DELETE FROM products WHERE pr_name=?;', (pr_name,))
-
+        # Удалить продукт по имени
+        kavrak.execute('DELETE FROM products WHERE pr_name=?;', (pr_name,))
+        print('Товввра удален')
+        # Сохранить изменения
+        connection.commit()
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        if connection:
+            connection.close()
 
 def get_user_location(user_id):
     with sqlite3.connect('dostavka.db') as db:
