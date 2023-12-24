@@ -3,6 +3,9 @@ import buttons
 import database
 from telebot import types
 from database import get_exact_user_cart, get_user_number_name
+import requests
+
+GOOGLE_MAPS_API_KEY = 'AIzaSyD7WKNnIQITdsoZNp28W5mDXkOCXslnmNo'
 
 bot = telebot.TeleBot('6733360508:AAGzdnGvr8nUJoC8T6TkJ2dan9idjzd8nEs')
 
@@ -51,18 +54,34 @@ def handle_location(message, username):
     user_id = message.from_user.id
     if message.location:
         lat = message.location.latitude
-        lon = message.location.longitude
+        long = message.location.longitude
 
-        # Добавим адрес пользователя в базу данных
-        address = f"{lat}, {lon}"
-        database.update_user_address(user_id, address)
+        # Запрос к Google Places API для получения названия места по координатам
+        place_name = get_place_name_from_coordinates(lat, long)
 
-        bot.send_message(user_id, f'Ваша локация: {lat}, {lon}')
+        # Добавление адреса пользователя в базу данных
+        database.update_user_address(user_id, place_name)
+
+        bot.send_message(user_id, f'Ваша локация: {place_name}')
         bot.send_message(user_id, 'Отправьте свой номер телефона', reply_markup=buttons.number_buttons())
         bot.register_next_step_handler(message, get_number, username)
     else:
         bot.send_message(user_id, 'Отправьте вашу локацию', reply_markup=buttons.geo_buttons())
         bot.register_next_step_handler(message, handle_location, username)
+
+def get_place_name_from_coordinates(latitude, longitude):
+    # Формирование запроса к Google Places API для получения названия места по координатам
+    url = f'https://maps.googleapis.com/maps/api/geocode/json?latlng={latitude},{longitude}&key={GOOGLE_MAPS_API_KEY}'
+    response = requests.get(url)
+    data = response.json()
+
+    # Проверяем, есть ли результаты и название места
+    if 'results' in data and data['results']:
+        place_name = data['results'][0]['formatted_address']
+        return place_name
+    else:
+        return 'Unknown Place'
+
 def get_number(message, name):
     user_id = message.from_user.id
 
@@ -205,7 +224,7 @@ def get_user_product_count(call):
 def main_menu_handle(call):
     user_id = call.message.chat.id
     message_id = call.message.message_id
-
+    products = database.get_pr_name_id()
     # Если нажал на кнопку: Оформить заказ
     if call.data == 'order':
         # Удалим сообщение с верхними кнопками
@@ -250,7 +269,7 @@ def main_menu_handle(call):
         bot.edit_message_text(full_text,
                               user_id,
                               message_id,
-                              reply_markup=buttons.get_cart())
+                              reply_markup=buttons.get_cart(products))
 
     # Если нажал на очистить корзину
     elif call.data == 'clear_cart':

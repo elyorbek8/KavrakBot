@@ -1,7 +1,6 @@
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
-
 # Кнопки со всеми продуктами(основное меню)
 def main_menu_buttons():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -10,7 +9,7 @@ def main_menu_buttons():
     markup.add(types.KeyboardButton("Корзина🛒"))
     return markup
 
-def main_menu(get_pr_name_id):
+def main_menu(products):
     # Создаем пространство для кнопок
     buttons = InlineKeyboardMarkup(row_width=2)
 
@@ -75,7 +74,7 @@ def get_accept():
     return buttons
 
 # Кнопка для перехода в корзину
-def get_cart():
+def get_cart(products):
     buttons = InlineKeyboardMarkup(row_width=1)
 
     clear_cart = InlineKeyboardButton(text='Очистить корзину', callback_data='clear_cart')
